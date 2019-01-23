@@ -7,6 +7,7 @@
 .vscode
 .idea
 .gradle
+.project
 CI_*
 bin/
 out/
