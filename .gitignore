@@ -3,9 +3,12 @@
 
 # IntelliJ
 *.iml
+.settings
+.vscode
 .idea
 .gradle
 CI_*
+bin/
 out/
 build/
 classes/
