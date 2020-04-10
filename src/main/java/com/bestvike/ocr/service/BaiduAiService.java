@@ -20,7 +20,7 @@ import java.util.Map;
 public class BaiduAiService {
 
     /**
-     * 拼接ocr识别图片换行情况.
+     * 拼接ocr识别图片中单字段文字换行情况.
      * @param mapResult             要返回的map结果
      * @param waitForRemovekey      判断出来的因换行新增的数据，jyrq字段位null或""
      * @param isDelete              判断最后一行是否为总金额,是则删除，否则为正常数据
@@ -59,8 +59,7 @@ public class BaiduAiService {
         });
     }
 
-    public String ocrForBank(String url)
-    {
+    public String ocrForBank(byte[] imageBytes) {
         /**
          * 重要提示代码中所需工具类
          * FileUtil,Base64Util,HttpUtil,GsonUtils请从
@@ -75,10 +74,9 @@ public class BaiduAiService {
 
 
         String filePath = "C:\\Users\\Administrator\\Desktop\\高拍仪拍照\\ces.jpg";
-        filePath = url;
         try {
-            byte[] imgData = FileUtil.readFileByBytes(filePath);
-            String imgStr = Base64Util.encode(imgData);
+            // byte[] imgData = FileUtil.readFileByBytes(filePath);
+            String imgStr = Base64Util.encode(imageBytes);
             // 请求模板参数
             String recogniseParams = "templateSign=78f68d1de422bb4525f208691d84de79&image=" + URLEncoder
                     .encode(imgStr, "UTF-8");

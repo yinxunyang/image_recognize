@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by 许崇雷 on 2018-10-20.
@@ -31,15 +32,15 @@ public final class GridImage {
     private static final int MAX_GREEN = 255 - MIN_RED;
     private static final int MAX_BLUE = 255 - MIN_RED;
     private static final int MIN_DISTANCE = 5;
-    //图片数据
-    private final byte[] buffer;//图片文件二进制数据
-    private final String format;//图片扩展名
-    private final BufferedImage image;//内存图
-    //结果数据
-    private Rectangle[][] grid;//图片切分的矩形
-    private String[][] table;//识别结果内容
-    private int gridRowCount;//行数
-    private int gridColumnCount;//列数
+    // 图片数据
+    private final byte[] buffer;// 图片文件二进制数据
+    private final String format;// 图片扩展名
+    private final BufferedImage image;// 内存图
+    // 结果数据
+    private Rectangle[][] grid;// 图片切分的矩形
+    private String[][] table;// 识别结果内容
+    private int gridRowCount;// 行数
+    private int gridColumnCount;// 列数
 
     /**
      * 构造函数
@@ -81,29 +82,20 @@ public final class GridImage {
      */
     private static Point getIntersection(Point firstBegin, Point firstEnd, Point secondBegin, Point secondEnd) {
         /*
-         * L1，L2都存在斜率的情况：
-         * 直线方程L1: ( y - y1 ) / ( y2 - y1 ) = ( x - x1 ) / ( x2 - x1 )
-         * => y = [ ( y2 - y1 ) / ( x2 - x1 ) ]( x - x1 ) + y1
-         * 令 a = ( y2 - y1 ) / ( x2 - x1 )
-         * 有 y = a * x - a * x1 + y1   .........1
-         * 直线方程L2: ( y - y3 ) / ( y4 - y3 ) = ( x - x3 ) / ( x4 - x3 )
-         * 令 b = ( y4 - y3 ) / ( x4 - x3 )
-         * 有 y = b * x - b * x3 + y3 ..........2
+         * L1，L2都存在斜率的情况： 直线方程L1: ( y - y1 ) / ( y2 - y1 ) = ( x - x1 ) / ( x2 - x1 ) =>
+         * y = [ ( y2 - y1 ) / ( x2 - x1 ) ]( x - x1 ) + y1 令 a = ( y2 - y1 ) / ( x2 -
+         * x1 ) 有 y = a * x - a * x1 + y1 .........1 直线方程L2: ( y - y3 ) / ( y4 - y3 ) =
+         * ( x - x3 ) / ( x4 - x3 ) 令 b = ( y4 - y3 ) / ( x4 - x3 ) 有 y = b * x - b * x3
+         * + y3 ..........2
          *
-         * 如果 a = b，则两直线平等，否则， 联解方程 1,2，得:
-         * x = ( a * x1 - b * x3 - y1 + y3 ) / ( a - b )
+         * 如果 a = b，则两直线平等，否则， 联解方程 1,2，得: x = ( a * x1 - b * x3 - y1 + y3 ) / ( a - b )
          * y = a * x - a * x1 + y1
          *
-         * L1存在斜率, L2平行Y轴的情况：
-         * x = x3
-         * y = a * x3 - a * x1 + y1
+         * L1存在斜率, L2平行Y轴的情况： x = x3 y = a * x3 - a * x1 + y1
          *
-         * L1 平行Y轴，L2存在斜率的情况：
-         * x = x1
-         * y = b * x - b * x3 + y3
+         * L1 平行Y轴，L2存在斜率的情况： x = x1 y = b * x - b * x3 + y3
          *
-         * L1与L2都平行Y轴的情况：
-         * 如果 x1 = x3，那么L1与L2重合，否则平等
+         * L1与L2都平行Y轴的情况： 如果 x1 = x3，那么L1与L2重合，否则平等
          *
          */
         float a = 0, b = 0;
@@ -117,26 +109,26 @@ public final class GridImage {
             state |= 2;
         }
         switch (state) {
-            case 0: //L1与L2都平行Y轴
+            case 0: // L1与L2都平行Y轴
             {
                 if (firstBegin.x == secondBegin.x)
                     throw new RuntimeException("两条直线互相重合，且平行于Y轴，无法计算交点。");
                 else
                     throw new RuntimeException("两条直线互相平行，且平行于Y轴，无法计算交点。");
             }
-            case 1: //L1存在斜率, L2平行Y轴
+            case 1: // L1存在斜率, L2平行Y轴
             {
                 int x = secondBegin.x;
                 int y = Math.round((firstBegin.x - x) * (-a) + firstBegin.y);
                 return new Point(x, y);
             }
-            case 2: //L1 平行Y轴，L2存在斜率
+            case 2: // L1 平行Y轴，L2存在斜率
             {
                 int x = firstBegin.x;
                 int y = Math.round((secondBegin.x - x) * (-b) + secondBegin.y);
                 return new Point(x, y);
             }
-            case 3: //L1，L2都存在斜率
+            case 3: // L1，L2都存在斜率
             {
                 if (a == b)
                     throw new RuntimeException("两条直线平行或重合，无法计算交点。");
@@ -175,11 +167,11 @@ public final class GridImage {
      */
     @SuppressWarnings("SuspiciousNameCombination")
     private void init() {
-        //识别四个边红色点
+        // 识别四个边红色点
         final int right = this.image.getWidth() - 1;
         final int bottom = this.image.getHeight() - 1;
 
-        //识别竖线(从左到右)
+        // 识别竖线(从左到右)
         List<Point> topPoints = new ArrayList<>();
         List<Point> bottomPoints = new ArrayList<>();
         int lastTop = 0;
@@ -188,11 +180,13 @@ public final class GridImage {
         bottomPoints.add(new Point(0, bottom));
         for (int x = 0; x <= right; x++) {
             Color topColor = new Color(this.image.getRGB(x, 0));
-            if (topColor.getRed() > MIN_RED && topColor.getGreen() < MAX_GREEN && topColor.getBlue() < MAX_BLUE && x - lastTop > MIN_DISTANCE)
+            if (topColor.getRed() > MIN_RED && topColor.getGreen() < MAX_GREEN && topColor.getBlue() < MAX_BLUE
+                    && x - lastTop > MIN_DISTANCE)
                 topPoints.add(new Point(lastTop = x, 0));
 
             Color bottomColor = new Color(this.image.getRGB(x, bottom));
-            if (bottomColor.getRed() > MIN_RED && bottomColor.getGreen() < MAX_GREEN && bottomColor.getBlue() < MAX_BLUE && x - lastBottom > MIN_DISTANCE)
+            if (bottomColor.getRed() > MIN_RED && bottomColor.getGreen() < MAX_GREEN && bottomColor.getBlue() < MAX_BLUE
+                    && x - lastBottom > MIN_DISTANCE)
                 bottomPoints.add(new Point(lastBottom = x, bottom));
         }
         if (topPoints.size() != bottomPoints.size())
@@ -200,7 +194,7 @@ public final class GridImage {
         topPoints.add(new Point(right, 0));
         bottomPoints.add(new Point(right, bottom));
 
-        //识别横线(从上到下)
+        // 识别横线(从上到下)
         List<Point> leftPoints = new ArrayList<>();
         List<Point> rightPoints = new ArrayList<>();
         int lastLeft = 0;
@@ -209,11 +203,13 @@ public final class GridImage {
         rightPoints.add(new Point(right, 0));
         for (int y = 0; y <= bottom; y++) {
             Color leftColor = new Color(this.image.getRGB(0, y));
-            if (leftColor.getRed() > MIN_RED && leftColor.getGreen() < MAX_GREEN && leftColor.getBlue() < MAX_BLUE && y - lastLeft > MIN_DISTANCE)
+            if (leftColor.getRed() > MIN_RED && leftColor.getGreen() < MAX_GREEN && leftColor.getBlue() < MAX_BLUE
+                    && y - lastLeft > MIN_DISTANCE)
                 leftPoints.add(new Point(0, lastLeft = y));
 
             Color rightColor = new Color(this.image.getRGB(right, y));
-            if (rightColor.getRed() > MIN_RED && rightColor.getGreen() < MAX_GREEN && rightColor.getBlue() < MAX_BLUE && y - lastRight > MIN_DISTANCE)
+            if (rightColor.getRed() > MIN_RED && rightColor.getGreen() < MAX_GREEN && rightColor.getBlue() < MAX_BLUE
+                    && y - lastRight > MIN_DISTANCE)
                 rightPoints.add(new Point(right, lastRight = y));
         }
         if (leftPoints.size() != rightPoints.size())
@@ -221,16 +217,17 @@ public final class GridImage {
         leftPoints.add(new Point(0, bottom));
         rightPoints.add(new Point(right, bottom));
 
-        //计算所有的交点
+        // 计算所有的交点
         int rowCount = leftPoints.size();
         int colCount = topPoints.size();
         Point[][] points = new Point[rowCount][colCount];
         for (int rowIndex = 0; rowIndex < rowCount; rowIndex++) {
             for (int colIndex = 0; colIndex < colCount; colIndex++)
-                points[rowIndex][colIndex] = getIntersection(leftPoints.get(rowIndex), rightPoints.get(rowIndex), topPoints.get(colIndex), bottomPoints.get(colIndex));
+                points[rowIndex][colIndex] = getIntersection(leftPoints.get(rowIndex), rightPoints.get(rowIndex),
+                        topPoints.get(colIndex), bottomPoints.get(colIndex));
         }
 
-        //网格划分
+        // 网格划分
         int rcRowCount = rowCount - 1;
         int rcColCount = colCount - 1;
         Rectangle[][] grid = new Rectangle[rcRowCount][rcColCount];
@@ -262,11 +259,11 @@ public final class GridImage {
         if (this.table != null)
             return this.table;
 
-        //调用阿里云接口识别
+        // 调用阿里云接口识别
         AliyunOcrResponse response = AliyunUtils.ocrAdvanced(this.buffer);
         IEnumerable<AliyunOcrWordInfo> prism_wordsInfo = Linq.asEnumerable(response.getPrism_wordsInfo());
 
-        //识别结果派分到单元格
+        // 识别结果派分到单元格
         Rectangle[][] grid = this.grid;
         int rowCount = this.gridRowCount;
         int colCount = this.gridColumnCount;
@@ -277,14 +274,16 @@ public final class GridImage {
                 final int fColIndex = colIndex;
                 final AliyunOcrWordInfo wordInfo = prism_wordsInfo
                         .where(a -> grid[fRowIndex][fColIndex].contains(a.getRectangle()))
-                        .maxByNull(a -> a.getRectangle().width * a.getRectangle().height);//取面积最大的
+                        .maxByNull(a -> a.getRectangle().width * a.getRectangle().height);// 取面积最大的
                 if (wordInfo == null)
                     continue;
-                table[fRowIndex][fColIndex] = StringUtils.replaceChars(wordInfo.getWord(), '，', ',');//替换中文逗号
+                table[fRowIndex][fColIndex] = StringUtils.replaceChars(wordInfo.getWord(), '，', ',');// 替换中文逗号
             }
         }
         return this.table = table;
     }
+
+
 
     /**
      * 预览识别结果
@@ -296,9 +295,11 @@ public final class GridImage {
         int rcColCount = this.gridColumnCount;
         String[][] table = this.ocr();
         StringBuilder builder = new StringBuilder(1000);
-        builder.append("<head><meta charset=\"UTF-8\"><style>body{font-family:微软雅黑;}table{margin-top:10px;border-collapse:collapse;border:1px solid #aaa;}table th{vertical-align:baseline;padding:6px 15px 6px 6px;background-color:#d5d5d5;border:1px solid #aaa;word-break:keep-all;white-space:nowrap;text-align:left;}table td{vertical-align:text-top;padding:6px 15px 6px 6px;background-color:#efefef;border:1px solid #aaa;word-break:break-all;white-space:pre-wrap;}</style></head>");
+        builder.append(
+                "<head><meta charset=\"UTF-8\"><style>body{font-family:微软雅黑;}table{margin-top:10px;border-collapse:collapse;border:1px solid #aaa;}table th{vertical-align:baseline;padding:6px 15px 6px 6px;background-color:#d5d5d5;border:1px solid #aaa;word-break:keep-all;white-space:nowrap;text-align:left;}table td{vertical-align:text-top;padding:6px 15px 6px 6px;background-color:#efefef;border:1px solid #aaa;word-break:break-all;white-space:pre-wrap;}</style></head>");
         builder.append("<body>\n");
-        builder.append("<img src='data:image/").append(this.format).append(";base64,").append(Base64.encodeBase64String(this.buffer)).append("' />\n");
+        builder.append("<img src='data:image/").append(this.format).append(";base64,")
+                .append(Base64.encodeBase64String(this.buffer)).append("' />\n");
         builder.append("<br>\n");
         builder.append("<table border=\"1\" cellPadding=\"5\" cellspacing=\"0\">\n");
         for (int rowIndex = 0; rowIndex < rcRowCount; rowIndex++) {
@@ -330,11 +331,11 @@ public final class GridImage {
         int rcColCount = this.gridColumnCount;
         String[][] table = this.ocr();
         HSSFWorkbook wb = new HSSFWorkbook();
-        HSSFSheet sheet = wb.createSheet(sheetName);  //创建table工作薄
+        HSSFSheet sheet = wb.createSheet(sheetName); // 创建table工作薄
         for (int rowIndex = 0; rowIndex < rcRowCount; rowIndex++) {
-            HSSFRow row = sheet.createRow(rowIndex);//创建表格行
+            HSSFRow row = sheet.createRow(rowIndex);// 创建表格行
             for (int colIndex = 0; colIndex < rcColCount; colIndex++) {
-                HSSFCell cell = row.createCell(colIndex);//根据表格行创建单元格
+                HSSFCell cell = row.createCell(colIndex);// 根据表格行创建单元格
                 String cellValue = table[rowIndex][colIndex];
                 if (StringUtils.isEmpty(cellValue))
                     continue;

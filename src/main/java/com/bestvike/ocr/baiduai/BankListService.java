@@ -24,8 +24,8 @@ public class BankListService {
     @Autowired
     private BaiduAiService baiduAiService;
 
-    public Map bankOcr(String url) {
-        String jsonRs = baiduAiService.ocrForBank(url);
+    public Map bankOcr(byte[] imageBytes) {
+        String jsonRs = baiduAiService.ocrForBank(imageBytes);
         if (jsonRs == null ) {
             throw new RuntimeException("ocr识别失败");
         }
@@ -34,7 +34,6 @@ public class BankListService {
         JSONArray ret = (JSONArray) data.get("ret");
 
         Map result = JSON.parseObject(data.toString(), Map.class);
-        System.out.println("args = " + result);
         List<Map> retMap = JSON.parseArray(ret.toString(), Map.class);
         Map<String, Object> mapR = new HashMap<>();
         final boolean[] delete = { false };
@@ -43,8 +42,6 @@ public class BankListService {
                 delete[0] = true;
             } else {
                 mapR.put(m.get("word_name").toString(), m.get("word"));
-                System.out.println(m.get("word_name"));
-                System.out.println(m.get("word"));
             }
         });
 
@@ -78,6 +75,31 @@ public class BankListService {
         });
         log.debug("mapResult = " + mapResult);
         return mapResult;
+    }
+
+
+        /**
+     * 预览识别结果
+     *
+     * @return html 内容
+     */
+    public String previewForBank(Map<String, Object> result) {
+        StringBuilder builder = new StringBuilder(1000);
+        builder.append(
+                "<head><meta charset=\"UTF-8\"><style>body{font-family:微软雅黑;}table{margin-top:10px;border-collapse:collapse;border:1px solid #aaa;}table th{vertical-align:baseline;padding:6px 15px 6px 6px;background-color:#d5d5d5;border:1px solid #aaa;word-break:keep-all;white-space:nowrap;text-align:left;}table td{vertical-align:text-top;padding:6px 15px 6px 6px;background-color:#efefef;border:1px solid #aaa;word-break:break-all;white-space:pre-wrap;}</style></head>");
+        builder.append("<body>\n");
+        builder.append("<br>\n");
+        builder.append("<table border=\"1\" cellPadding=\"5\" cellspacing=\"0\">\n");
+        result.keySet().forEach(key -> {
+            builder.append("  <tr>\n");
+            builder.append("    <td>").append(key).append(":").append(result.get(key)).append("</td>\n");
+            builder.append("  </tr>\n");
+        });
+        for (int rowIndex = 0; rowIndex < result.size(); rowIndex++) {
+        }
+        builder.append("</table>\n");
+        builder.append("</body>");
+        return builder.toString();
     }
 
 }
