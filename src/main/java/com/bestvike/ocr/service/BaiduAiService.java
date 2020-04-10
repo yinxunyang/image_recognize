@@ -1,8 +1,14 @@
 package com.bestvike.ocr.service;
 
+import com.bestvike.ocr.baiduai.AuthService;
+import com.bestvike.ocr.baiduai.Base64Util;
+import com.bestvike.ocr.baiduai.FileUtil;
+import com.bestvike.ocr.baiduai.HttpUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
@@ -10,6 +16,7 @@ import java.util.Map;
  * Created by Liu qingxiang on 2020/4/10.
  */
 @Service
+@Slf4j
 public class BaiduAiService {
 
     /**
@@ -51,4 +58,45 @@ public class BaiduAiService {
             }
         });
     }
+
+    public String ocrForBank(String url)
+    {
+        /**
+         * 重要提示代码中所需工具类
+         * FileUtil,Base64Util,HttpUtil,GsonUtils请从
+         * https://ai.baidu.com/file/658A35ABAB2D404FBF903F64D47C1F72
+         * https://ai.baidu.com/file/C8D81F3301E24D2892968F09AE1AD6E2
+         * https://ai.baidu.com/file/544D677F5D4E4F17B4122FBD60DB82B3
+         * https://ai.baidu.com/file/470B3ACCA3FE43788B5A963BF0B625F3
+         * 下载
+         */
+        // iocr识别apiUrl
+        String recogniseUrl = "https://aip.baidubce.com/rest/2.0/solution/v1/iocr/recognise";
+
+
+        String filePath = "C:\\Users\\Administrator\\Desktop\\高拍仪拍照\\ces.jpg";
+        filePath = url;
+        try {
+            byte[] imgData = FileUtil.readFileByBytes(filePath);
+            String imgStr = Base64Util.encode(imgData);
+            // 请求模板参数
+            String recogniseParams = "templateSign=78f68d1de422bb4525f208691d84de79&image=" + URLEncoder
+                    .encode(imgStr, "UTF-8");
+            // 请求分类器参数
+            String classifierParams = "classifierId=1&image=" + URLEncoder.encode(imgStr, "UTF-8");
+
+
+            String accessToken = AuthService.getAuth();
+            // 请求模板识别
+            String result = HttpUtil.post(recogniseUrl, accessToken, recogniseParams);
+            // 请求分类器识别
+            // String result = HttpUtil.post(recogniseUrl, accessToken, classifierParams);
+            log.debug(result);
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }
