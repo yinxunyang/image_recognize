@@ -3,7 +3,7 @@ buildscript {
         springBootVersion = '2.0.6.RELEASE'
     }
     repositories {
-        mavenCentral()
+        maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
@@ -19,7 +19,7 @@ version = '0.0.1-SNAPSHOT'
 sourceCompatibility = 1.8
 
 repositories {
-    mavenCentral()
+    maven { url 'http://maven.aliyun.com/nexus/content/groups/public/' }
 }
 
 dependencies {
@@ -30,10 +30,19 @@ dependencies {
     compile 'commons-io:commons-io:2.4'
     compile 'org.apache.poi:poi:4.0.0'
     compile 'com.bestvike:linq:2.0.0'
+    // fastjson
+    compile("com.alibaba:fastjson:1.2.38")
+    compile("org.json:json:20190722")
     //编译时
-    compileOnly 'org.projectlombok:lombok'
+    compile("com.google.code.gson:gson:2.6")
+    // 解决lombok找不到符号异常,gradle4.7版本之后需添加
+    annotationProcessor("org.projectlombok:lombok:1.18.2")
+    compileOnly("org.projectlombok:lombok:1.18.2")
     //运行时
     runtimeOnly 'org.springframework.boot:spring-boot-devtools'
     //测试
+    // lombok
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.2")
+    testCompileOnly("org.projectlombok:lombok:1.18.2")
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
