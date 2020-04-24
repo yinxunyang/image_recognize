@@ -46,7 +46,7 @@ public class OcrController {
     @PostMapping("/bank/preview")
     public void bankOcr(@RequestParam("file") MultipartFile file, HttpServletResponse response) throws IOException{
         byte[] bytes = this.getBytes(file);
-        Map result = bankListService.bankOcr(bytes);
+        Map<String, Object> result = bankListService.bankOcr(bytes);
         String html = bankListService.previewForBank(result);
         try (ServletOutputStream outputStream = response.getOutputStream()) {
             IOUtils.write(html, outputStream, "utf-8");
